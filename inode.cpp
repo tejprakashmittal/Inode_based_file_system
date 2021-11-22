@@ -8,6 +8,7 @@
 using namespace std;
 
 string current_disk;
+FILE *disk_pointer;
 
 struct iNode{   // total size 8 bytes
     int fileSize; // 4 bytes
@@ -15,7 +16,7 @@ struct iNode{   // total size 8 bytes
 };
 
 struct fileName_To_iNode_map{ //total size 24 bytes
-    string fileName; //max 20 bytes
+    char fileName[20]; //max 20 bytes
     int iNode_index; // 4 bytes   inode number == inode index == fileDescriptor
 };
 
@@ -27,9 +28,10 @@ struct superBlock{  //64 B
 }Super_Block;
 
 int create_disk(string diskname){
+    struct superBlock Super_Block;
     char buffer[BLOCK_SIZE];
     bzero(buffer,BLOCK_SIZE);
-    FILE *disk_pointer = fopen(diskname.c_str(),"w");
+    disk_pointer = fopen(diskname.c_str(),"wb");
     for(int i=0;i<TOTAL_BLOCKS;i++){
         fwrite(buffer,sizeof(char),BLOCK_SIZE,disk_pointer);
     }
@@ -40,31 +42,34 @@ int create_disk(string diskname){
         Super_Block.d_bitmap[i] = 1;
     }
     for(int i=0;i<NO_OF_INODES;i++){
-        Super_Block.fnameToiNodeMap[i].fileName="";
+        Super_Block.fnameToiNodeMap[i].fileName[20]=0;
         Super_Block.fnameToiNodeMap[i].iNode_index=-1;
         Super_Block.iNode_array[i].fileSize=-1;
         Super_Block.iNode_array[i].dataBlock=-1;
     }
-    bzero(buffer,BLOCK_SIZE);
-    memcpy(buffer,&Super_Block,sizeof(Super_Block));
-    fwrite(buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
+    char s_block_buffer[sizeof(Super_Block)];
+    bzero(s_block_buffer,sizeof(Super_Block));
+    memcpy(s_block_buffer,&Super_Block,sizeof(Super_Block));
+    fseek(disk_pointer, 0, SEEK_SET);
+    fwrite(s_block_buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
     fclose(disk_pointer);
     return 1;
 }
 
 int mount_disk(string diskname){
-   FILE *disk_pointer = fopen(diskname.c_str(),"r"); 
-   char buffer[BLOCK_SIZE];
-   bzero(buffer,BLOCK_SIZE);
-   fread(buffer,sizeof(char),BLOCK_SIZE,disk_pointer);
+   disk_pointer = fopen(diskname.c_str(),"rb+"); 
+   fseek(disk_pointer,0,SEEK_SET);
+   char buffer[sizeof(Super_Block)];
+   bzero(buffer,sizeof(Super_Block));
+   fread(buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
    memcpy(&Super_Block,buffer,sizeof(Super_Block));
-   cout<<Super_Block.d_bitmap[0]<<endl;
-   fclose(disk_pointer);
+   cout<<Super_Block.i_bitmap[1]<<endl;
+   cout<<Super_Block.d_bitmap[1]<<endl;
    return 1;
 }
 
 int unmount_disk(string diskname){
-   FILE *disk_pointer = fopen(diskname.c_str(),"rb"); 
+   disk_pointer = fopen(diskname.c_str(),"rb+"); 
    char buffer[BLOCK_SIZE];
    bzero(buffer,BLOCK_SIZE);
    bzero(buffer,BLOCK_SIZE);
@@ -76,27 +81,33 @@ int create_file(string filename){
     //FILE *disk_pointer = fopen(current_disk.c_str(),"rb"); 
     int i_index=-1,d_index=-1; // both contains relative indices not the actual ones
     for(int i=0;i<NO_OF_INODES;i++){
-        cout<<Super_Block.i_bitmap[i]<<endl;
         if(Super_Block.i_bitmap[i]==1){
             i_index = i;
             break;
         }
     }
+    cout<<"Broke1"<<endl;
     for(int i=0;i<NO_OF_DATA_BLOCKS;i++){
         if(Super_Block.d_bitmap[i] == 1){
             d_index = i;
             break;
         }
     }
+    cout<<"Broke2"<<endl;
     if(i_index == -1 || d_index == -1){
         cout<<"inode_index "<<i_index<<endl<<"datablock "<<d_index<<endl;
         return -1;
     }
     Super_Block.iNode_array[i_index].dataBlock = d_index + DATA_BLOCK_START_INDEX; // actual datablock index
+    cout<<"Broke3"<<endl;
     Super_Block.i_bitmap[i_index]=0;
-    Super_Block.fnameToiNodeMap[i_index].fileName = filename;
+    cout<<"Broke4"<<endl;
+    strcpy(Super_Block.fnameToiNodeMap[i_index].fileName,filename.c_str());
+    cout<<"Broke5"<<endl;
     Super_Block.fnameToiNodeMap[i_index].iNode_index = i_index + INODE_START_INDEX; // actual index
+    cout<<"Broke6"<<endl;
     Super_Block.d_bitmap[d_index]=0;
+    cout<<"Broke7"<<endl;
     //fclose(disk_pointer);
     return i_index + INODE_START_INDEX;  //actual index
 }
