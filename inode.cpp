@@ -69,11 +69,13 @@ int mount_disk(string diskname){
 }
 
 int unmount_disk(string diskname){
-   disk_pointer = fopen(diskname.c_str(),"rb+"); 
-   char buffer[BLOCK_SIZE];
-   bzero(buffer,BLOCK_SIZE);
-   bzero(buffer,BLOCK_SIZE);
+   //disk_pointer = fopen(diskname.c_str(),"rb+"); 
+   char buffer[sizeof(Super_Block)];
+   bzero(buffer,sizeof(Super_Block));
+   bzero(buffer,sizeof(Super_Block));
    memcpy(buffer,&Super_Block,sizeof(Super_Block));
+   fseek(disk_pointer,0,SEEK_SET);
+   fwrite(buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
    fclose(disk_pointer);
 }
 
@@ -86,30 +88,51 @@ int create_file(string filename){
             break;
         }
     }
-    cout<<"Broke1"<<endl;
     for(int i=0;i<NO_OF_DATA_BLOCKS;i++){
         if(Super_Block.d_bitmap[i] == 1){
             d_index = i;
             break;
         }
     }
-    cout<<"Broke2"<<endl;
     if(i_index == -1 || d_index == -1){
         cout<<"inode_index "<<i_index<<endl<<"datablock "<<d_index<<endl;
         return -1;
     }
     Super_Block.iNode_array[i_index].dataBlock = d_index + DATA_BLOCK_START_INDEX; // actual datablock index
-    cout<<"Broke3"<<endl;
     Super_Block.i_bitmap[i_index]=0;
-    cout<<"Broke4"<<endl;
     strcpy(Super_Block.fnameToiNodeMap[i_index].fileName,filename.c_str());
-    cout<<"Broke5"<<endl;
     Super_Block.fnameToiNodeMap[i_index].iNode_index = i_index + INODE_START_INDEX; // actual index
-    cout<<"Broke6"<<endl;
     Super_Block.d_bitmap[d_index]=0;
-    cout<<"Broke7"<<endl;
     //fclose(disk_pointer);
-    return i_index + INODE_START_INDEX;  //actual index
+    return i_index;// + INODE_START_INDEX;  //actual index
+}
+
+int write_file(int fd){
+    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    if(db_index > 0)
+        fseek(disk_pointer,db_index*BLOCK_SIZE,SEEK_SET);
+    else
+        return -1;
+    cout<<"Type the text to be written: "<<endl;
+    string data;
+    cin>>data;
+    fwrite(data.c_str(),sizeof(char),data.size(),disk_pointer);
+    Super_Block.iNode_array[fd].fileSize = data.size();
+    return 1;
+}
+
+int read_file(int fd){
+    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    if(db_index > 0)
+        fseek(disk_pointer,db_index*BLOCK_SIZE,SEEK_SET);
+    else
+        return -1;
+    char buff[BLOCK_SIZE];
+    bzero(buff,BLOCK_SIZE);
+    fread(buff,sizeof(char),BLOCK_SIZE,disk_pointer);
+    cout<<buff<<endl;
+    fflush(stdout);
+    return 1;
 }
 
 int main(){
@@ -152,13 +175,26 @@ int main(){
 
                     }
                     else if(j==3){
-
+                        int fd;
+                        cout<<"Enter file descriptor:"<<endl;
+                        cin>>fd;
+                        if(read_file(fd) == -1){
+                            cout<<"Error while reading the file"<<endl;
+                        }
                     }
                     else if(j==4){
 
                     }
                     else if(j==5){
-
+                        int fd;
+                        cout<<"Enter file descriptor:"<<endl;
+                        cin>>fd;
+                        if(write_file(fd)){
+                            cout<<"Written successfully"<<endl;
+                        }
+                        else{
+                            cout<<"Error while writing into file"<<endl;
+                        }
                     }
                     else if(j==6){
                         unmount_disk(current_disk);
