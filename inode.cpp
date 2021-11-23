@@ -12,6 +12,7 @@ FILE *disk_pointer;
 
 unordered_map<string,int> fName_to_fd;    //key--filename val--fd
 unordered_map<int,int> open_files;  //fd to mode(0-read,1-write,2-append)
+string file_modes[3] = {"Read","Write","Append"};
 
 struct iNode{   // total size 8 bytes
     int fileSize; // 4 bytes
@@ -254,19 +255,40 @@ int main(){
                         }
                         else cout<<"Please the file first."<<endl;
                     }
-                    else if(j==5){
+                    else if(j==5){   //write file
                         int fd;
                         cout<<"Enter file descriptor:"<<endl;
                         cin>>fd;
-                        if(write_file(fd)){
-                            cout<<"Written successfully"<<endl;
+                        if(isOpen(fd)){
+                            if(open_files[fd] == 1){
+                                if(write_file(fd)){
+		                    cout<<"Written successfully"<<endl;
+		                }
+		                else{
+		                    cout<<"Error while writing into file"<<endl;
+		                }
+                            }
+                            else cout<<"Open the file in write mode"<<endl;
                         }
-                        else{
-                            cout<<"Error while writing into file"<<endl;
+                        else cout<<"Please the file first."<<endl;
+                    }
+                    else if(j==6){   //close file
+                       int fd;
+                        cout<<"Enter file descriptor:"<<endl;
+                        cin>>fd;
+                        if(isOpen(fd)){
+                            open_files.erase(fd);
+                            cout<<"File closed successfully"<<endl;
                         }
+                        else cout<<"File is not open."<<endl; 
                     }
                     else if(j==7){  //delete file
 
+                    }
+                    else if(j==9){  //list of opened files
+                        for(auto itr:open_files){
+                            cout<<Super_Block.fnameToiNodeMap[itr.first].fileName<<"    "<<itr.first<<"     "<<file_modes[itr.second]<<endl;
+                        }
                     }
                     else if(j==10){
                         unmount_disk(current_disk);
