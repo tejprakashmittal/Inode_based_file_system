@@ -135,6 +135,21 @@ int read_file(int fd){
     return 1;
 }
 
+int append_file(int fd){
+    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    int filesize = Super_Block.iNode_array[fd].fileSize;
+    if(db_index > 0)
+            fseek(disk_pointer,db_index*BLOCK_SIZE+filesize,SEEK_SET);
+    else
+            return -1; 
+    cout<<"Type the text to be appended: "<<endl;
+    string data;
+    cin>>data; 
+    fwrite(data.c_str(),sizeof(char),data.size(),disk_pointer);
+    Super_Block.iNode_array[fd].fileSize = filesize + data.size();
+    return 1;
+}
+
 int main(){
     int i;
     while(1){
@@ -183,7 +198,12 @@ int main(){
                         }
                     }
                     else if(j==4){
-
+                        int fd;
+                        cout<<"Enter file descriptor:"<<endl;
+                        cin>>fd;
+                        if(append_file(fd) == -1){
+                            cout<<"Error while reading the file"<<endl;
+                        }
                     }
                     else if(j==5){
                         int fd;
