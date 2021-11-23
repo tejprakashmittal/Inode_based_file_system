@@ -10,6 +10,9 @@ using namespace std;
 string current_disk;
 FILE *disk_pointer;
 
+unordered_map<string,int> fName_to_fd;    //key--filename val--fd
+unordered_map<int,int> open_files;  //fd to mode(0-read,1-write,2-append)
+
 struct iNode{   // total size 8 bytes
     int fileSize; // 4 bytes
     int dataBlock;  //4bytes
@@ -63,8 +66,11 @@ int mount_disk(string diskname){
    bzero(buffer,sizeof(Super_Block));
    fread(buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
    memcpy(&Super_Block,buffer,sizeof(Super_Block));
-   cout<<Super_Block.i_bitmap[1]<<endl;
-   cout<<Super_Block.d_bitmap[1]<<endl;
+   for(int i=0;i<NO_OF_INODES;i++){
+       if(Super_Block.i_bitmap[i] == 0){
+          fName_to_fd[Super_Block.fnameToiNodeMap[i].fileName] = Super_Block.fnameToiNodeMap[i].iNode_index;
+       }
+   }
    return 1;
 }
 
@@ -76,6 +82,8 @@ int unmount_disk(string diskname){
    memcpy(buffer,&Super_Block,sizeof(Super_Block));
    fseek(disk_pointer,0,SEEK_SET);
    fwrite(buffer,sizeof(char),sizeof(Super_Block),disk_pointer);
+   fName_to_fd.clear();
+   open_files.clear();
    fclose(disk_pointer);
 }
 
@@ -101,8 +109,9 @@ int create_file(string filename){
     Super_Block.iNode_array[i_index].dataBlock = d_index + DATA_BLOCK_START_INDEX; // actual datablock index
     Super_Block.i_bitmap[i_index]=0;
     strcpy(Super_Block.fnameToiNodeMap[i_index].fileName,filename.c_str());
-    Super_Block.fnameToiNodeMap[i_index].iNode_index = i_index + INODE_START_INDEX; // actual index
+    Super_Block.fnameToiNodeMap[i_index].iNode_index = i_index;
     Super_Block.d_bitmap[d_index]=0;
+    fName_to_fd[filename] = i_index;
     //fclose(disk_pointer);
     return i_index;// + INODE_START_INDEX;  //actual index
 }
@@ -150,6 +159,21 @@ int append_file(int fd){
     return 1;
 }
 
+int open_file(string filename,int mode){
+    if(fName_to_fd.find(filename) == fName_to_fd.end()){
+        cout<<"File is not created."<<endl;
+        return -1;
+    }
+    int fd = fName_to_fd[filename];
+    open_files[fd] = mode;
+    return fd;
+}
+
+bool isOpen(int fd){
+    if(open_files.find(fd)!=open_files.end()) return true;
+    return false;
+}
+
 int main(){
     int i;
     while(1){
@@ -176,7 +200,11 @@ int main(){
                     cout<<"3: read file"<<endl;
                     cout<<"4: append file"<<endl;
                     cout<<"5: write file"<<endl;
-                    cout<<"6: unmount disk"<<endl;
+                    cout<<"6: close file"<<endl;
+                    cout<<"7: delete file"<<endl;
+                    cout<<"8: list of files"<<endl;
+                    cout<<"9: list of opened files"<<endl;
+                    cout<<"10: unmount disk"<<endl;
                     int j;
                     cin>>j;
                     if(j==1){
@@ -187,23 +215,44 @@ int main(){
                         cout<<"File create with descriptor: "<<fd<<endl;
                     }
                     else if(j==2){
-
+                        string filename;
+                        cout<<"Enter the file name:"<<endl;
+                        cin>>filename;
+                        int mode;
+                        cout<<"0: read mode"<<endl;
+                        cout<<"1: write mode"<<endl;
+                        cout<<"2: append mode"<<endl;
+                        cin>>mode;
+                        int fd = open_file(filename,mode);
+                        cout<<"File opened with descriptor: "<<fd<<endl;
                     }
                     else if(j==3){
                         int fd;
                         cout<<"Enter file descriptor:"<<endl;
                         cin>>fd;
-                        if(read_file(fd) == -1){
-                            cout<<"Error while reading the file"<<endl;
+                        if(isOpen(fd)){
+                            if(open_files[fd] == 0){
+                                if(read_file(fd) == -1){
+                                    cout<<"Error while reading the file"<<endl;
+                                }
+                            }
+                            else cout<<"Open the file in read mode"<<endl;
                         }
+                        else cout<<"Please the file first."<<endl;
                     }
                     else if(j==4){
                         int fd;
                         cout<<"Enter file descriptor:"<<endl;
                         cin>>fd;
-                        if(append_file(fd) == -1){
-                            cout<<"Error while reading the file"<<endl;
+                        if(isOpen(fd)){
+                            if(open_files[fd] == 2){
+                                if(append_file(fd) == -1){
+                                    cout<<"Error while reading the file"<<endl;
+                                }
+                            }
+                            else cout<<"Open the file in append mode"<<endl;
                         }
+                        else cout<<"Please the file first."<<endl;
                     }
                     else if(j==5){
                         int fd;
@@ -216,7 +265,10 @@ int main(){
                             cout<<"Error while writing into file"<<endl;
                         }
                     }
-                    else if(j==6){
+                    else if(j==7){  //delete file
+
+                    }
+                    else if(j==10){
                         unmount_disk(current_disk);
                         break;
                     }
