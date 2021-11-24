@@ -285,6 +285,13 @@ int main(){
                     else if(j==7){  //delete file
 
                     }
+                    else if(j==8){ //List all files present in the current disk.
+                        for(int i=0;i<NO_OF_INODES;i++){
+                            if(Super_Block.i_bitmap[i] == 0){
+                                cout<<Super_Block.fnameToiNodeMap[i].fileName<<"    "<<i<<endl;
+                            }
+                        }
+                    }
                     else if(j==9){  //list of opened files
                         for(auto itr:open_files){
                             cout<<Super_Block.fnameToiNodeMap[itr.first].fileName<<"    "<<itr.first<<"     "<<file_modes[itr.second]<<endl;
