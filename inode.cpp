@@ -1,11 +1,11 @@
 #include<bits/stdc++.h>
 #include<unistd.h>
-#define TOTAL_BLOCKS 5
+#define TOTAL_BLOCKS 128000
 #define BLOCK_SIZE 4096
-#define NO_OF_DATA_BLOCKS 2
-#define NO_OF_INODES 2
-#define INODE_START_INDEX 1
-#define DATA_BLOCK_START_INDEX 3
+#define NO_OF_DATA_BLOCKS 99000
+#define NO_OF_INODES 28000
+#define INODE_START_INDEX 1000
+#define DATA_BLOCK_START_INDEX 29000
 using namespace std;
 
 string current_disk;
@@ -25,11 +25,11 @@ struct fileName_To_iNode_map{ //total size 24 bytes
     int iNode_index; // 4 bytes   inode number == inode index == fileDescriptor
 };
 
-struct superBlock{  //64 B
+struct superBlock{  //64 +16 = 80 B
     int i_bitmap[NO_OF_INODES];    //8 B
     int d_bitmap[NO_OF_DATA_BLOCKS]; // 8 B
     struct fileName_To_iNode_map fnameToiNodeMap[NO_OF_INODES]; // 24*2=48 B
-    struct iNode iNode_array[NO_OF_INODES];
+    struct iNode iNode_array[NO_OF_INODES]; //2*8=16 B
 }Super_Block;
 
 int create_disk(string diskname){
