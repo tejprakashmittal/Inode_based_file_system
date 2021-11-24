@@ -1,5 +1,8 @@
 #include<bits/stdc++.h>
 #include<unistd.h>
+#define RED "\033[1;31m"
+#define GREEN "\033[1;32m"
+#define DEFAULT "\033[0m"
 #define TOTAL_BLOCKS 128000
 #define BLOCK_SIZE 4096
 #define NO_OF_DATA_BLOCKS 99000
@@ -115,7 +118,8 @@ int create_file(string filename){
     Super_Block.d_bitmap[d_index]=0;
     fName_to_fd[filename] = i_index;
     //fclose(disk_pointer);
-    return i_index;// + INODE_START_INDEX;  //actual index
+    //return i_index;// + INODE_START_INDEX;  //actual index
+    return 1;
 }
 
 int write_file(int fd){
@@ -216,34 +220,44 @@ int main(){
             string diskname;
             cout<<"Enter a unique disk name:"<<endl;
             cin>>diskname;
-            create_disk(diskname);
+            if(create_disk(diskname) == 1){
+                cout << string(GREEN) << "Disk Created of Size 500 MB!!!" << string(DEFAULT) << endl;
+            }
         }
         else if(i==2){
             cout<<"Enter the disk name:"<<endl;
             string diskname;
             cin>>diskname;
             if(mount_disk(diskname) == 1){
+                cout<<string(GREEN)<<"Disk Mounted!!!"<<string(DEFAULT)<<endl;
                 current_disk = diskname;
                 while(1)
                 {
+                    cout<<"========================="<<endl;
                     cout<<"1: create file"<<endl;
                     cout<<"2: open file"<<endl;
                     cout<<"3: read file"<<endl;
-                    cout<<"4: append file"<<endl;
-                    cout<<"5: write file"<<endl;
+                    cout<<"4: write file"<<endl;
+                    cout<<"5: append file"<<endl;
                     cout<<"6: close file"<<endl;
                     cout<<"7: delete file"<<endl;
                     cout<<"8: list of files"<<endl;
                     cout<<"9: list of opened files"<<endl;
-                    cout<<"10: unmount disk"<<endl;
+                    cout<<"10: unmount"<<endl;
+                    cout<<"========================="<<endl;
                     int j;
                     cin>>j;
                     if(j==1){
                         string filename;
                         cout<<"Enter a unique file name:"<<endl;
                         cin>>filename;
-                        int fd = create_file(filename);
-                        cout<<"File create with descriptor: "<<fd<<endl;
+                        if(create_file(filename) == 1){
+                            cout << string(GREEN) << "File Created!!!" << string(DEFAULT) << endl;
+                        }
+                        else{
+                            cout << string(RED) << "Error in File Creation!!!" << string(DEFAULT) << endl;
+                        }
+                        //cout<<"File create with descriptor: "<<fd<<endl;
                     }
                     else if(j==2){
                         string filename;
@@ -255,7 +269,10 @@ int main(){
                         cout<<"2: append mode"<<endl;
                         cin>>mode;
                         int fd = open_file(filename,mode);
-                        cout<<"File opened with descriptor: "<<fd<<endl;
+                        if(fd != -1)
+                            cout<<"File Descriptor: "<<fd<<"     "<<file_modes[mode]<<endl;
+                        else
+                            cout << string(RED) << "Error while opening the file!!!" << string(DEFAULT) << endl;
                     }
                     else if(j==3){
                         int fd;
@@ -271,7 +288,7 @@ int main(){
                         }
                         else cout<<"Please the file first."<<endl;
                     }
-                    else if(j==4){
+                    else if(j==5){
                         int fd;
                         cout<<"Enter file descriptor:"<<endl;
                         cin>>fd;
@@ -285,7 +302,7 @@ int main(){
                         }
                         else cout<<"Please open the file first."<<endl;
                     }
-                    else if(j==5){   //write file
+                    else if(j==4){   //write file
                         int fd;
                         cout<<"Enter file descriptor:"<<endl;
                         cin>>fd;
@@ -308,7 +325,7 @@ int main(){
                         cin>>fd;
                         if(isOpen(fd)){
                             open_files.erase(fd);
-                            cout<<"File closed successfully"<<endl;
+                            cout<<string(GREEN)<<"File closed successfully!!!"<<string(DEFAULT)<<endl;
                         }
                         else cout<<"File is not open."<<endl; 
                     }
@@ -318,7 +335,7 @@ int main(){
                         cin>>filename;
                         if(fName_to_fd.find(filename) != fName_to_fd.end()){
                             if(delete_file(filename)){
-                                cout<<"File deleted successfully!"<<endl;
+                                cout<<string(GREEN)<<"File deleted successfully!!!"<<string(DEFAULT)<<endl;
                             }
                             else cout<<"Error on file deletion!!!"<<endl;
                         }
@@ -340,6 +357,7 @@ int main(){
                     }
                     else if(j==10){
                         unmount_disk(current_disk);
+                        cout<<string(GREEN)<<"Disk Unmounted!!!"<<string(DEFAULT)<<endl;
                         break;
                     }
                 }
