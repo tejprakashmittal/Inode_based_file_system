@@ -175,6 +175,21 @@ bool isOpen(int fd){
     return false;
 }
 
+int delete_file(string filename){
+    int fd = fName_to_fd[filename];
+    if(isOpen(fd)){
+        open_files.erase(fd);
+    }
+    fName_to_fd.erase(filename);
+    Super_Block.i_bitmap[fd] = 1;
+    strcpy(Super_Block.fnameToiNodeMap[fd].fileName,"");
+    int d_block_index = Super_Block.iNode_array[fd].dataBlock - DATA_BLOCK_START_INDEX;
+    Super_Block.d_bitmap[d_block_index] = 1;
+    Super_Block.iNode_array[fd].dataBlock = -1;
+    Super_Block.iNode_array[fd].fileSize = -1;
+    return 1;
+}
+
 int main(){
     int i;
     while(1){
@@ -253,7 +268,7 @@ int main(){
                             }
                             else cout<<"Open the file in append mode"<<endl;
                         }
-                        else cout<<"Please the file first."<<endl;
+                        else cout<<"Please open the file first."<<endl;
                     }
                     else if(j==5){   //write file
                         int fd;
@@ -270,7 +285,7 @@ int main(){
                             }
                             else cout<<"Open the file in write mode"<<endl;
                         }
-                        else cout<<"Please the file first."<<endl;
+                        else cout<<"Please open the file first."<<endl;
                     }
                     else if(j==6){   //close file
                        int fd;
@@ -283,7 +298,18 @@ int main(){
                         else cout<<"File is not open."<<endl; 
                     }
                     else if(j==7){  //delete file
-
+                        string filename;
+                        cout<<"Enter the file name:"<<endl;
+                        cin>>filename;
+                        if(fName_to_fd.find(filename) != fName_to_fd.end()){
+                            if(delete_file(filename)){
+                                cout<<"File deleted successfully!"<<endl;
+                            }
+                            else cout<<"Error on file deletion!!!"<<endl;
+                        }
+                        else{
+                            cout<<"File does not exist!!!"<<endl;
+                        }
                     }
                     else if(j==8){ //List all files present in the current disk.
                         for(int i=0;i<NO_OF_INODES;i++){
