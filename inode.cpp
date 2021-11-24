@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include<unistd.h>
 #define TOTAL_BLOCKS 5
 #define BLOCK_SIZE 4096
 #define NO_OF_DATA_BLOCKS 2
@@ -124,10 +125,17 @@ int write_file(int fd){
     else
         return -1;
     cout<<"Type the text to be written: "<<endl;
-    string data;
-    cin>>data;
-    fwrite(data.c_str(),sizeof(char),data.size(),disk_pointer);
-    Super_Block.iNode_array[fd].fileSize = data.size();
+    int read_count=0;
+    char input_buff[BLOCK_SIZE];
+    bzero(input_buff,BLOCK_SIZE);
+    // int i=0;
+    // char c='\0';
+    // while((c=getchar())!='\n'){
+    //     input_buff[i++] = c;
+    // }
+    read_count = read(STDIN_FILENO,input_buff,BLOCK_SIZE);
+    fwrite(input_buff,sizeof(char),read_count-1,disk_pointer);
+    Super_Block.iNode_array[fd].fileSize = read_count-1;
     return 1;
 }
 
@@ -153,10 +161,17 @@ int append_file(int fd){
     else
             return -1; 
     cout<<"Type the text to be appended: "<<endl;
-    string data;
-    cin>>data; 
-    fwrite(data.c_str(),sizeof(char),data.size(),disk_pointer);
-    Super_Block.iNode_array[fd].fileSize = filesize + data.size();
+    int read_count=0;
+    char input_buff[BLOCK_SIZE];
+    bzero(input_buff,BLOCK_SIZE);
+    // int i=0;
+    // char c='\0';
+    // while((c=getchar())!='\n'){
+    //     input_buff[i++] = c;
+    // }
+    read_count = read(STDIN_FILENO,input_buff,BLOCK_SIZE);
+    fwrite(input_buff,sizeof(char),read_count-1,disk_pointer);
+    Super_Block.iNode_array[fd].fileSize = filesize + read_count-1;
     return 1;
 }
 
