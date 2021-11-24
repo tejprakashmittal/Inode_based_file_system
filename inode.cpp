@@ -9,6 +9,7 @@
 #define NO_OF_INODES 28000
 #define INODE_START_INDEX 1000
 #define DATA_BLOCK_START_INDEX 29000
+#define MAX_DIRECT_POINTERS 10
 using namespace std;
 
 string current_disk;
@@ -20,7 +21,7 @@ string file_modes[3] = {"Read","Write","Append"};
 
 struct iNode{   // total size 8 bytes
     int fileSize; // 4 bytes
-    int dataBlock;  //4bytes
+    int dataBlock[MAX_DIRECT_POINTERS];  //4bytes
 };
 
 struct fileName_To_iNode_map{ //total size 24 bytes
@@ -53,7 +54,7 @@ int create_disk(string diskname){
         Super_Block.fnameToiNodeMap[i].fileName[20]=0;
         Super_Block.fnameToiNodeMap[i].iNode_index=-1;
         Super_Block.iNode_array[i].fileSize=-1;
-        Super_Block.iNode_array[i].dataBlock=-1;
+        Super_Block.iNode_array[i].dataBlock[MAX_DIRECT_POINTERS]={-1};
     }
     char s_block_buffer[sizeof(Super_Block)];
     bzero(s_block_buffer,sizeof(Super_Block));
@@ -111,7 +112,7 @@ int create_file(string filename){
         cout<<"inode_index "<<i_index<<endl<<"datablock "<<d_index<<endl;
         return -1;
     }
-    Super_Block.iNode_array[i_index].dataBlock = d_index + DATA_BLOCK_START_INDEX; // actual datablock index
+    Super_Block.iNode_array[i_index].dataBlock[0] = d_index + DATA_BLOCK_START_INDEX; // actual datablock index
     Super_Block.i_bitmap[i_index]=0;
     strcpy(Super_Block.fnameToiNodeMap[i_index].fileName,filename.c_str());
     Super_Block.fnameToiNodeMap[i_index].iNode_index = i_index;
@@ -123,7 +124,7 @@ int create_file(string filename){
 }
 
 int write_file(int fd){
-    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    int db_index = Super_Block.iNode_array[fd].dataBlock[0];
     if(db_index > 0)
         fseek(disk_pointer,db_index*BLOCK_SIZE,SEEK_SET);
     else
@@ -144,7 +145,7 @@ int write_file(int fd){
 }
 
 int read_file(int fd){
-    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    int db_index = Super_Block.iNode_array[fd].dataBlock[0];
     if(db_index > 0)
         fseek(disk_pointer,db_index*BLOCK_SIZE,SEEK_SET);
     else
@@ -158,7 +159,7 @@ int read_file(int fd){
 }
 
 int append_file(int fd){
-    int db_index = Super_Block.iNode_array[fd].dataBlock;
+    int db_index = Super_Block.iNode_array[fd].dataBlock[0];
     int filesize = Super_Block.iNode_array[fd].fileSize;
     if(db_index > 0)
             fseek(disk_pointer,db_index*BLOCK_SIZE+filesize,SEEK_SET);
@@ -202,9 +203,9 @@ int delete_file(string filename){
     fName_to_fd.erase(filename);
     Super_Block.i_bitmap[fd] = 1;
     strcpy(Super_Block.fnameToiNodeMap[fd].fileName,"");
-    int d_block_index = Super_Block.iNode_array[fd].dataBlock - DATA_BLOCK_START_INDEX;
+    int d_block_index = Super_Block.iNode_array[fd].dataBlock[0] - DATA_BLOCK_START_INDEX;
     Super_Block.d_bitmap[d_block_index] = 1;
-    Super_Block.iNode_array[fd].dataBlock = -1;
+    Super_Block.iNode_array[fd].dataBlock[0] = -1;
     Super_Block.iNode_array[fd].fileSize = -1;
     return 1;
 }
